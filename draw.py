@@ -13,6 +13,10 @@ def loadImage(filename):
     #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
+def color_distance(c1, c2):
+    # euclidean distance between two colors.
+
+
 def similar(c1, c2):
     # tests if two colors are similar.
     t = COLOR_THRESHOLD
@@ -97,7 +101,8 @@ def findContours(img):
                 #print(polygon)
     return polygons
 
-def nearestColor(img):
+def nearestColor(color, usable_colors):
+    # given a color, return the color in usable_colors closest to it
     pass
 
 def changeFillColor(color):
@@ -109,8 +114,18 @@ def drawPolygon(polygon, color):
 def draw():
     pass
 
+# Load image
 img = loadImage("rubik.jpg")
 
+# Scale image to fit canvas
+min_dimension = min(CANVAS_W, CANVAS_H)
+if min_dimension = CANVAS_W:
+    scale_percent = CANVAS_W/img.shape[1]
+else:
+    scale_percent = CANVAS_H/img.shape[0]
+
+
+# Find contours
 contours = np.asarray(findContours(img))
 cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
