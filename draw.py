@@ -2,19 +2,27 @@ from constants import *
 import cv2
 import numpy as np
 import pyautogui
+import keyboard
 
 def detectStart():
-    # pauses until enter key is pressed
-    pass
+    # pauses until r key is pressed
+    keyboard.wait("r")
 
 def loadImage(filename):
     # loads cv2 image from file
     img = cv2.imread(filename)
     #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # resize
+    width = 100
+    img_w = width
+    img_h = int(width/img.shape[0] * img.shape[1])
+
+    img = cv2.resize(img, (img_w, img_h), interpolation = cv2.INTER_AREA)
     return img
 
 def color_distance(c1, c2):
     # euclidean distance between two colors.
+    pass
 
 
 def similar(c1, c2):
@@ -36,6 +44,7 @@ def findContours(img):
     for x in range(w):
         for y in range(h):
             if visited[y][x] == 0:
+                visited[y][x] = 1
                 color = img[y][x].tolist()
 
                 queue = [(x,y)] # BFS queue
@@ -87,6 +96,7 @@ def findContours(img):
 
                 # get polygons
                 imgray = cv2.cvtColor(bitmap, cv2.COLOR_BGR2GRAY)
+                #imgray = cv2.Canny(imgray,100,200)
                 ret, thresh = cv2.threshold(imgray, 127, 255, 0)
                 contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                 
@@ -95,6 +105,8 @@ def findContours(img):
                 #cv2.waitKey(0)
 
                 for polygon in contours:
+                    #epsilon = 0.01 * cv2.arcLength(polygon, True)
+                    #polygon = cv2.approxPolyDP(polygon, epsilon, True)
                     #polygon = polygon.tolist()
                     #polygons.append([polygon, avg_color])
                     polygons.append(polygon)
@@ -114,20 +126,51 @@ def drawPolygon(polygon, color):
 def draw():
     pass
 
+def removeNear(polygon):
+    # removes points that are close together.
+    print(polygon)
+    res = [(polygon[0][0][0], polygon[0][0][1])]
+    for i in range(1,len(polygon)):
+        x2, y2 = polygon[i-1][0]
+        if (res[-1][0]-x2)**2 + (res[-1][1]-y2)**2 > 5:
+            res.append((x2, y2))
+    return res
+
 # Load image
-img = loadImage("rubik.jpg")
+img = loadImage("rubixscube.png")
 
 # Scale image to fit canvas
 min_dimension = min(CANVAS_W, CANVAS_H)
-if min_dimension = CANVAS_W:
-    scale_percent = CANVAS_W/img.shape[1]
+if min_dimension == CANVAS_W:
+    scale = CANVAS_W/img.shape[1]
 else:
-    scale_percent = CANVAS_H/img.shape[0]
-
+    scale = CANVAS_H/img.shape[0]
 
 # Find contours
-contours = np.asarray(findContours(img))
+polygons = findContours(img)[::-1][:-1]
+contours = np.asarray(findContours(img))[::-1][:100]
 cv2.drawContours(img, contours, -1, (0,255,0), 1)
-
 cv2.imshow("test",img)
 cv2.waitKey(0)
+#print(polygons)
+
+print(len(polygons))
+detectStart()
+speed = 1 # the higher the number, the less points are drawn
+
+usedpolygons = set()
+for polygon in polygons:
+    polygon = removeNear(polygon)
+    if tuple(polygon) in usedpolygons:
+        continue
+    usedpolygons.add(tuple(polygon))
+    prev_point = polygon[-1]
+    pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
+    pyautogui.mouseDown()
+    for i, point in enumerate(polygon):
+        if i%speed == 0:
+            #point = point[0]        
+            pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.10)
+            prev_point = point
+    pyautogui.mouseUp()
+pyautogui.press("z")
