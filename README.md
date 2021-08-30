@@ -4,4 +4,6 @@
 Line drawing bot for skribbl/sketchful. Currently a work in progress.
 Requires `opencv-python`, `keyboard` and `pyautogui`.
 
-Press `r` to start the drawing after navigating to the desired window.
+First, run `mousepos.py` to find all the necessary values for `constants.py`.
+
+Run `draw.py` to draw an image. Press `r` to start the drawing after navigating to the desired window.
