@@ -4,6 +4,8 @@ import numpy as np
 import pyautogui
 import keyboard
 import sys
+from tkinter import *
+from threading import Thread
 
 def detectStart():
     # pauses until r key is pressed
@@ -16,7 +18,7 @@ def loadImage(filename):
     # resize
     width = 100
     img_w = width
-    img_h = int(width/img.shape[0] * img.shape[1])
+    img_h = int(width/img.shape[1] * img.shape[0])
 
     img = cv2.resize(img, (img_w, img_h), interpolation = cv2.INTER_AREA)
     return img
@@ -162,13 +164,33 @@ def removeNear(polygon):
             res.append((x2, y2))
     return res
 
-def main():
+# Create tkinter interface
+root = Tk()
+root["bg"] = "#2C363F"
+root.title('scribblebot')
+
+Label(root, text="scribblebot", font=("Verdana", 16), padx = 100, pady = 5, bg="#2C363F", fg="#00BBF9").pack()
+
+filenameTextbox = Entry(root, font=("Verdana", 12), bg="#58687D", fg="#FFFFFF", relief="flat")
+filenameTextbox.insert(0, 'image filepath')
+filenameTextbox.pack()
+
+startButton = Button(root, text="start", font=("Verdana", 12), bg="#00BBF9", fg="#FFFFFF", relief="flat")
+startButton.pack(pady=5)
+
+statusLabel = Label(root, text="press start to begin", font=("Verdana", 12), padx = 5, pady = 5, bg="#2C363F", fg="#E75A7C")
+statusLabel.pack()
+
+root.wm_attributes("-topmost", 1)
+
+# Drawing image
+def draw():
     # Load image
-    img = loadImage(input("Image filename: "))
+    filename = filenameTextbox.get()
+    img = loadImage(filename)
 
     # Scale image to fit canvas
-    min_dimension = min(CANVAS_W, CANVAS_H)
-    if min_dimension == CANVAS_W:
+    if CANVAS_W-img.shape[1] < CANVAS_H-img.shape[0]:
         scale = CANVAS_W/img.shape[1]
     else:
         scale = CANVAS_H/img.shape[0]
@@ -177,32 +199,50 @@ def main():
     colors, coords = get_palette()
 
     # Find contours
-    polygons = findContours(img)[::-1]
-    print("Contour calculation complete (%d polygons found)" % len(polygons))
-    print("Navigate to desired window, then press [r] to start")
+    polygons = findContours(img)
+    statusLabel["text"] = "Contour calculation complete (%d polygons found)\nNavigate to desired window, then press [r] to start" % len(polygons)
     detectStart()
 
     # Draw
     usedpolygons = set()
     prev_color = [-1, -1, -1]
-    for shape in polygons:
+    for i, shape in enumerate(polygons):
+        statusLabel["text"] = "Drawing polygon %d of %d" % (i, len(polygons))
         polygon = removeNear(shape[0])
         color = shape[1]
+        
         if tuple(polygon) in usedpolygons:
             continue
+        
         if (0,0) in polygon:
             continue
+        
         if color[0] != prev_color[0] or color[1] != prev_color[1] or color[2] != prev_color[2]:
             switch_color(color, colors, coords)    
             prev_color = color
+        
         usedpolygons.add(tuple(polygon))
-        prev_point = polygon[-1]
+        
+        if (polygon[0][0]-polygon[-1][0])**2 + (polygon[0][1]-polygon[-1][1])**2 > 60:
+            prev_point = polygon[0]
+        else:
+            prev_point = polygon[-1]
         pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
         pyautogui.mouseDown()
+        
         for i, point in enumerate(polygon):       
             pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.05)
             prev_point = point
         pyautogui.mouseUp()
+    statusLabel["text"] = "Drawing complete"
+
+def main():
+    def startDraw():
+        drawThread = Thread(target=draw)
+        drawThread.daemon = True
+        drawThread.start()
+    startButton["command"] = startDraw
+    root.mainloop()
 
 if __name__ == "__main__":
     main()

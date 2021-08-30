@@ -17,6 +17,6 @@ if GAME == "sketchful":
 # Skribbl
 
 # Image processing parameters
-COLOR_THRESHOLD = 50 # maximum distance between two colors for them to be considered similar
-PIXEL_THRESHOLD = 6 # how many similar pixels are needed for a contour to be contructed for the region
+COLOR_THRESHOLD = 30 # maximum distance between two colors for them to be considered similar
+PIXEL_THRESHOLD = 10 # how many similar pixels are needed for a contour to be contructed for the region
 MIN_POINT_DISTANCE = 3 # how far points have to be in each polygonzz
