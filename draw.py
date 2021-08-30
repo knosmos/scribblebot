@@ -132,7 +132,7 @@ def removeNear(polygon):
 
 def main():
     # Load image
-    img = loadImage(input())
+    img = loadImage(input("Image filename: "))
 
     # Scale image to fit canvas
     min_dimension = min(CANVAS_W, CANVAS_H)
