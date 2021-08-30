@@ -1,6 +1,8 @@
 # scribblebot
 ### A semi functional edge-detecting autodraw bot
 
+![image](https://user-images.githubusercontent.com/30610197/131401025-d8adc2c9-0c48-4784-b3f8-de00f3ff242e.png)
+
 Line drawing bot for skribbl/sketchful. Currently a work in progress.
 Requires `opencv-python`, `keyboard` and `pyautogui`.
 
