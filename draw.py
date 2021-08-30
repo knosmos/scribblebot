@@ -120,57 +120,46 @@ def nearestColor(color, usable_colors):
 def changeFillColor(color):
     pass
 
-def drawPolygon(polygon, color):
-    pass
-
-def draw():
-    pass
-
 def removeNear(polygon):
     # removes points that are close together.
     print(polygon)
     res = [(polygon[0][0][0], polygon[0][0][1])]
     for i in range(1,len(polygon)):
         x2, y2 = polygon[i-1][0]
-        if (res[-1][0]-x2)**2 + (res[-1][1]-y2)**2 > 5:
+        if (res[-1][0]-x2)**2 + (res[-1][1]-y2)**2 > MIN_POINT_DISTANCE:
             res.append((x2, y2))
     return res
 
-# Load image
-img = loadImage("rubixscube.png")
+def main():
+    # Load image
+    img = loadImage(input())
 
-# Scale image to fit canvas
-min_dimension = min(CANVAS_W, CANVAS_H)
-if min_dimension == CANVAS_W:
-    scale = CANVAS_W/img.shape[1]
-else:
-    scale = CANVAS_H/img.shape[0]
+    # Scale image to fit canvas
+    min_dimension = min(CANVAS_W, CANVAS_H)
+    if min_dimension == CANVAS_W:
+        scale = CANVAS_W/img.shape[1]
+    else:
+        scale = CANVAS_H/img.shape[0]
 
-# Find contours
-polygons = findContours(img)[::-1][:-1]
-contours = np.asarray(findContours(img))[::-1][:100]
-cv2.drawContours(img, contours, -1, (0,255,0), 1)
-cv2.imshow("test",img)
-cv2.waitKey(0)
-#print(polygons)
+    # Find contours
+    polygons = findContours(img)[::-1][:-4]
+    detectStart()
 
-print(len(polygons))
-detectStart()
-speed = 1 # the higher the number, the less points are drawn
-
-usedpolygons = set()
-for polygon in polygons:
-    polygon = removeNear(polygon)
-    if tuple(polygon) in usedpolygons:
-        continue
-    usedpolygons.add(tuple(polygon))
-    prev_point = polygon[-1]
-    pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
-    pyautogui.mouseDown()
-    for i, point in enumerate(polygon):
-        if i%speed == 0:
-            #point = point[0]        
-            pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.10)
+    usedpolygons = set()
+    for polygon in polygons:
+        polygon = removeNear(polygon)
+        if tuple(polygon) in usedpolygons:
+            continue
+        if (0,0) in polygon:
+            continue
+        usedpolygons.add(tuple(polygon))
+        prev_point = polygon[-1]
+        pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
+        pyautogui.mouseDown()
+        for i, point in enumerate(polygon):       
+            pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.05)
             prev_point = point
-    pyautogui.mouseUp()
-pyautogui.press("z")
+        pyautogui.mouseUp()
+
+if __name__ == "__main__":
+    main()
