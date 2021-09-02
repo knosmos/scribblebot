@@ -4,8 +4,11 @@ import numpy as np
 import pyautogui
 import keyboard
 import sys
+import math
 from tkinter import *
 from threading import Thread
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 
 def detectStart():
     # pauses until r key is pressed
@@ -23,15 +26,29 @@ def loadImage(filename):
     img = cv2.resize(img, (img_w, img_h), interpolation = cv2.INTER_AREA)
     return img
 
+def rgb_to_hsv(color):
+    arr = np.uint8([[color]])
+    return cv2.cvtColor(arr,cv2.COLOR_RGB2HSV)[0][0]
+
 def color_distance(c1, c2):
-    # squared euclidean distance between two colors
-    return (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 + (c1[2]-c2[2])**2
+    # squared weighted euclidean distance between two colors
+    return 0.30*(c1[0]-c2[0])**2 + 0.59*(c1[1]-c2[1])**2 + 0.11*(c1[2]-c2[2])**2
+    
+    # manhattan distance
+    # return abs(c1[0]-c2[0]) + abs(c1[1]-c2[1]) + abs(c1[2]-c2[2])
+    
+    # compare hsv values
+    '''hsv_1 = rgb_to_hsv(c1)
+    hsv_2 = rgb_to_hsv(c2)
+    d_h = min(abs(hsv_1[0]-hsv_2[0]), 180-abs(hsv_1[0]-hsv_2[0]))
+    diff = 4*(d_h)**2 + 0.2*(hsv_1[1]-hsv_2[1])**2 + 0.3*(hsv_1[2]-hsv_2[2])**2 
+    return diff'''
 
 def similar(c1, c2):
     # tests if two colors are similar.
     t = COLOR_THRESHOLD
     # a = abs(c1[0]-c2[0]) < t and abs(c1[1]-c2[1]) < t and abs(c1[2]-c2[2]) < t
-    return color_distance(c1, c2) < t
+    return color_distance(c1, c2) < t*2
 
 def findContours(img):
     # Run BFS flood fill on each pixel, if the filled region is large
@@ -138,21 +155,45 @@ def get_palette():
     return colors, coords
 
 
-def switch_color(color, colors, coords):
+def switch_color(color, colors, coords, outline=False):
     # Find the color in palette closest to color
     # and switch to that color
-        
+
+    # outline=True makes the color darker (as in an outline)
+    
+    if outline:
+        c = [max(0,k-60) for k in color]
+    else:
+        c = color
     min_dist = float('inf')
     closest_idx = -1
     for idx, palette_color in enumerate(colors):
-        if palette_color == [255,255,255]:
-            continue # white is boring, ignore it
-        dist = color_distance(color, palette_color)
+        # if palette_color == [255,255,255]:
+        #    continue # white is boring, ignore it
+        dist = color_distance(c, palette_color)
         if dist < min_dist:
             min_dist = dist
             closest_idx = idx
     x, y = coords[closest_idx]
     pyautogui.click(x, y)
+    return True
+
+def findFillPoint(polygon):
+    # finds the point farthest from the polygon boundary inside the polygon.
+    poly = Polygon(polygon)
+    max_dist = 0
+    point = False
+    for i in range(len(polygon)):
+        for j in range(i):
+            distance = math.sqrt((polygon[i][0]-polygon[j][0])**2 + (polygon[i][1]-polygon[j][1])**2)
+            if distance > max_dist:
+                x = (polygon[i][0]+polygon[j][0])/2
+                y = (polygon[i][1]+polygon[j][1])/2
+                midpoint = Point(x, y)
+                if poly.contains(midpoint):
+                    max_dist = distance
+                    point = [x,y]
+    return point
 
 def removeNear(polygon):
     # removes points that are close together.
@@ -197,6 +238,7 @@ def draw():
 
     # Find colors/coords of palette
     colors, coords = get_palette()
+    print(colors)
 
     # Find contours
     polygons = findContours(img)
@@ -210,30 +252,49 @@ def draw():
         statusLabel["text"] = "Drawing polygon %d of %d" % (i, len(polygons))
         polygon = removeNear(shape[0])
         color = shape[1]
+        print(color)
         
         if tuple(polygon) in usedpolygons:
             continue
         
         if (0,0) in polygon:
             continue
-        
-        if color[0] != prev_color[0] or color[1] != prev_color[1] or color[2] != prev_color[2]:
-            switch_color(color, colors, coords)    
-            prev_color = color
+
+        if len(polygon) <= 2:
+            continue
+
+        switch_color(color, colors, coords, outline = True)
+        # if color[0] != prev_color[0] or color[1] != prev_color[1] or color[2] != prev_color[2]:
+        #    r = switch_color(color, colors, coords)
+        #    if not r:
+        #        continue
+        #    prev_color = color
         
         usedpolygons.add(tuple(polygon))
         
-        if (polygon[0][0]-polygon[-1][0])**2 + (polygon[0][1]-polygon[-1][1])**2 > 60:
-            prev_point = polygon[0]
-        else:
-            prev_point = polygon[-1]
+        #if (polygon[0][0]-polygon[-1][0])**2 + (polygon[0][1]-polygon[-1][1])**2 > 200:
+        #    prev_point = polygon[0]
+        #    fill_poly = False
+        #else:
+        prev_point = polygon[-1]
+        fill_poly = True
+
         pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
         pyautogui.mouseDown()
         
         for i, point in enumerate(polygon):       
-            pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.05)
+            pyautogui.moveTo(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1], duration = 0.0)
             prev_point = point
         pyautogui.mouseUp()
+
+        if len(polygon) >= 3 and fill_poly:
+            pyautogui.press(FILL_KEY)
+            point = findFillPoint(polygon)
+            switch_color(color, colors, coords, outline = False)
+            if point:
+                pyautogui.click(point[0]*scale + CANVAS[0], point[1]*scale + CANVAS[1])
+            pyautogui.press(PEN_KEY)
+
     statusLabel["text"] = "Drawing complete"
 
 def main():

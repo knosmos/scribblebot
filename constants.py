@@ -1,7 +1,7 @@
 GAME = "sketchful"
 
-PEN = "b" # keyboard shortcut for "pen"
-FILL = "f" # keyboard shortcut for "fill"
+PEN_KEY = "b" # keyboard shortcut for "pen"
+FILL_KEY = "f" # keyboard shortcut for "fill"
 
 # Sketchful
 if GAME == "sketchful":
@@ -17,6 +17,6 @@ if GAME == "sketchful":
 # Skribbl
 
 # Image processing parameters
-COLOR_THRESHOLD = 30 # maximum distance between two colors for them to be considered similar
-PIXEL_THRESHOLD = 10 # how many similar pixels are needed for a contour to be contructed for the region
-MIN_POINT_DISTANCE = 3 # how far points have to be in each polygonzz
+COLOR_THRESHOLD = 150 # maximum distance between two colors for them to be considered similar
+PIXEL_THRESHOLD = 3 # how many similar pixels are needed for a contour to be contructed for the region
+MIN_POINT_DISTANCE = 2 # how far points have to be in each polygon
