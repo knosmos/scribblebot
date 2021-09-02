@@ -134,7 +134,6 @@ def findContours(img):
 
 def get_palette():
     # Finds the position and color of each item in the color palette.
-    # Code modified from github.com/dchen327/pictionary-autodraw/
 
     colors = []  # store rgb values of colors
     coords = []  # store coordinates of where to click on screen
