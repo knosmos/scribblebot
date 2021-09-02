@@ -272,12 +272,12 @@ def draw():
         
         usedpolygons.add(tuple(polygon))
         
-        #if (polygon[0][0]-polygon[-1][0])**2 + (polygon[0][1]-polygon[-1][1])**2 > 200:
-        #    prev_point = polygon[0]
-        #    fill_poly = False
-        #else:
-        prev_point = polygon[-1]
-        fill_poly = True
+        if (polygon[0][0]-polygon[-1][0])**2 + (polygon[0][1]-polygon[-1][1])**2 > 300:
+            prev_point = polygon[0]
+            fill_poly = False
+        else:
+            prev_point = polygon[-1]
+            fill_poly = True
 
         pyautogui.moveTo(prev_point[0]*scale + CANVAS[0], prev_point[1]*scale + CANVAS[1])
         pyautogui.mouseDown()
